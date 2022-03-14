@@ -1,0 +1,164 @@
+// используйте typedef чтобы определить ftype
+
+typedef char ftype(const float *, size_t (*) (struct array, int64_t));
+
+------
+
+// Мы хотим, чтобы в структуре user хранились ссылки только на строчки из кучи.
+typedef struct { char* addr; } string_heap ;
+
+/*  Тип для идентификаторов пользователей
+    и его спецификаторы ввода и вывода для printf */
+typedef uint64_t uid;
+#define PRI_uid PRIu64
+#define SCN_uid SCNu64
+
+enum city {C_SARATOV, C_MOSCOW, C_PARIS, C_LOS_ANGELES, C_OTHER};
+
+/*  Массив, где элементам перечисления сопоставляются их текстовые представления */
+const char* city_string[] = {
+  [C_SARATOV] = "Saratov",
+  [C_MOSCOW] = "Moscow",
+  [C_PARIS] = "Paris",
+  [C_LOS_ANGELES] = "Los Angeles",
+  [C_OTHER] = "Other"
+};
+
+
+struct user {
+  const uid id;
+  const string_heap name;
+  enum city city;
+};
+
+int comparator_uid(const void * ptr_a, const void * ptr_b){
+    const struct user * a = ptr_a;
+    const struct user * b = ptr_b;
+    
+    if (a->id > b->id)
+        return +1;
+    
+    if (a->id < b->id)
+        return -1;
+    
+    return 0;
+}
+
+/* Сортировать массив пользователей по полю uid по возрастанию */
+void users_sort_uid(struct user users[], size_t sz) {
+    qsort(users, sz, sizeof(struct user), comparator_uid);
+}
+
+int comparator_name(const void * ptr_a, const void * ptr_b){
+    const struct user * a = ptr_a;
+    const struct user * b = ptr_b;
+    
+    return strcmp(a->name.addr, b->name.addr);
+}
+
+/* Сортировать массив пользователей по полю name */
+/* Порядок строк лексикографический; можно использовать компаратор 
+   строк -- стандартную функцию strcmp */
+void users_sort_name(struct user users[], size_t sz) {
+    qsort(users, sz, sizeof(struct user), comparator_name);
+}
+
+int comparator_city(const void * ptr_a, const void * ptr_b){
+    const struct user * a = ptr_a;
+    const struct user * b = ptr_b;
+    
+    return strcmp(city_string[a->city], city_string[b->city]);
+}
+
+/* Сортировать массив по _текстовому представлению_ города */
+void users_sort_city(struct user users[], size_t sz) {
+    qsort(users, sz, sizeof(struct user), comparator_city);
+}
+
+
+---------
+
+enum move_dir { MD_UP, MD_RIGHT, MD_DOWN, MD_LEFT, MD_NONE };
+
+// Определите тип обработчика событий move_callback с помощью typedef
+typedef void move_callback(enum move_dir);
+
+struct list_callback{
+    move_callback* function;
+    struct list_callback * next;
+};
+
+// Робот и его callback'и
+// callback'ов может быть неограниченное количество
+struct robot {
+    const char* name;
+    struct list_callback* head;
+};
+
+struct list_callback* struct_list_callback_get_last(struct list_callback* head){
+    if (head == NULL)
+        return NULL;
+    
+    struct list_callback* iterator = head;
+    
+    while(iterator->next != NULL){
+        iterator = iterator->next;
+    }
+    
+    return iterator;
+}
+
+struct list_callback* struct_list_callback_new(move_callback new_cb){
+    struct list_callback* new_list = malloc(sizeof(struct list_callback));
+    new_list->function = new_cb;
+    new_list->next = NULL;
+    
+    return new_list;
+}
+
+void struct_list_callback_clear(struct list_callback** adr_head){
+    struct list_callback* iterator = *adr_head;
+    
+    while(iterator != NULL){
+        struct list_callback* next_iterator = iterator->next;
+        free(iterator);
+        iterator = next_iterator;
+    }
+    
+   *adr_head = NULL;
+}
+
+void struct_list_callback_call_all(struct list_callback* head, enum move_dir dir){
+    struct list_callback* iterator = head;
+    
+    while(iterator != NULL){
+        (iterator->function)(dir); //получаем функцию, вызываем с аргументами
+        iterator = iterator->next;
+    }
+    
+}
+
+// Добавить callback к роботу, чтобы он вызывался при движении
+// В callback будет передаваться направление движения
+void register_callback(struct robot* robot, move_callback new_cb) {
+    struct list_callback* last = struct_list_callback_get_last(robot->head);
+    if (last == NULL)
+        robot->head = struct_list_callback_new(new_cb);
+    else 
+        last->next = struct_list_callback_new(new_cb);
+        //last = last->next;
+}
+
+// Отменить все подписки на события.
+// Это нужно чтобы освободить зарезервированные ресурсы
+// например, выделенную в куче память
+void unregister_all_callbacks(struct robot* robot) {
+    struct_list_callback_clear(&(robot->head));
+}
+
+// Вызывается когда робот движется
+// Эта функция должна вызвать все обработчики событий
+void move(struct robot* robot, enum move_dir dir) {
+    //(robot->head->function) - я функция -> вызов через оператор ()
+    struct_list_callback_call_all(robot->head, dir);
+}

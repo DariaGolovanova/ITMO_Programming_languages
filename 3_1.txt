@@ -1,0 +1,266 @@
+const union ins program[] = {
+    {.as_noarg = {BC_IREAD} },
+    {.as_arg64 = {BC_PUSH, 10} },
+    {BC_ISUB},
+    {.as_arg64 = {BC_PUSH, 2} },
+    {BC_IDIV},
+    {BC_IPRINT},
+    {BC_STOP}
+};
+
+
+-----------
+
+/* Описание инструкций (см. предыдущий шаг) */
+enum opcode { BC_PUSH, BC_IPRINT, BC_IREAD, BC_IADD, BC_STOP };
+
+struct bc_noarg {
+  enum opcode opcode;
+};
+
+struct bc_arg64 {
+  enum opcode opcode;
+  int64_t arg;
+};
+
+union ins {
+  enum opcode opcode;
+  struct bc_arg64 as_arg64;
+  struct bc_noarg as_noarg;
+};
+
+/* ------------------------ */
+
+struct vm_state {
+  const union ins *ip;
+  struct stack data_stack;
+};
+
+/* Начальная вместимость стека задаётся определением STACK_CAPACITY */
+struct vm_state state_create(const union ins *ip) {
+  return (struct vm_state){.ip = ip,
+                           .data_stack = stack_create(STACK_CAPACITY)};
+}
+
+----------
+
+/* Вам доступны:
+
+
+struct maybe_int64 {
+    int64_t value; 
+    bool valid; 
+};
+
+struct maybe_int64 some_int64(int64_t i);
+
+extern const struct maybe_int64 none_int64;
+
+void maybe_int64_print( struct maybe_int64 i );
+struct maybe_int64 maybe_read_int64();
+void print_int64(int64_t i)
+*/
+
+void interpret_push(struct vm_state* state) {
+    stack_push(& state->data_stack, state->ip->as_arg64.arg);
+}
+
+void interpret_iread(struct vm_state* state ) {
+    struct maybe_int64 result = maybe_read_int64();
+    if (result.valid)
+        stack_push(& state->data_stack, result.value);
+    /*
+    else
+        err("Stack is full.");
+    */
+}
+void interpret_iadd(struct vm_state* state ) {
+    struct maybe_int64 number2 = stack_pop(& state->data_stack);
+    struct maybe_int64 number1 = stack_pop(& state->data_stack);
+    if (number1.valid && number2.valid)
+        stack_push(& state->data_stack, number1.value + number2.value);
+    /*
+    else
+        err("Stack has no 2 values.");
+    */
+}
+void interpret_iprint(struct vm_state* state ) {
+    struct maybe_int64 result = stack_pop(& state->data_stack);
+    if (result.valid)
+        print_int64(result.value);
+    /*
+    else
+        err("Stack is empty.");
+    */
+}
+
+/* Подсказка: можно выполнять программу пока ip != NULL,
+    тогда чтобы её остановить достаточно обнулить ip */
+void interpret_stop(struct vm_state* state ) {
+    state->ip = NULL;
+}
+
+typedef void interpret_type(struct vm_state*);
+
+//void (* interpreters[])(struct vm_state*) = {
+interpret_type* interpreters[] = {
+  [BC_PUSH] = interpret_push,
+  [BC_IREAD] = interpret_iread,
+  [BC_IADD] = interpret_iadd,
+  [BC_IPRINT] = interpret_iprint,
+  [BC_STOP] = interpret_stop
+};
+
+void interpret(struct vm_state* state) {
+    while(state->ip != NULL){
+        //0 узнаём код операции
+        //1 по коду операции получаем индекс функции в массиве
+        //2 вызываем функцию
+        (interpreters[state->ip->opcode])(state);
+        if (state->ip != NULL)
+            (state->ip)++;
+    }
+}
+
+/*
+void interpret(struct vm_state* state) {
+    (interpreters[state->ip->opcode])(state);
+    
+    while(state->ip != NULL){
+         (state->ip)++;
+        (interpreters[state->ip->opcode])(state);
+    }
+}
+
+*/
+
+
+-------------
+
+
+/* Вам уже доступны функции: */
+bool stack_push( struct stack* s, int64_t value );
+struct maybe_int64 stack_pop( struct stack* s );
+
+/*
+  struct maybe_int64 {
+  int64_t value;
+  bool valid;
+  };
+*/
+
+struct maybe_int64 some_int64(int64_t i);
+/*  const struct maybe_int64 none_int64; */
+
+/*  Интерпретаторы команд */
+void interpret_swap  ( struct vm_state* state )  {
+    //stack: 1 2 ...
+    struct maybe_int64 number2 = stack_pop(& state->data_stack);
+    struct maybe_int64 number1 = stack_pop(& state->data_stack); 
+    
+     if (number1.valid && number2.valid){
+        //stack: ...
+        stack_push(& state->data_stack, number2.value);
+        stack_push(& state->data_stack, number1.value);
+        //stack: 2 1 ...
+    }
+}
+
+void interpret_pop   ( struct vm_state* state )  {
+    stack_pop(& state->data_stack);
+}
+
+void interpret_dup   ( struct vm_state* state )  {
+    struct maybe_int64 number = stack_pop(& state->data_stack);
+    
+     if (number.valid){
+        stack_push(& state->data_stack, number.value);
+        stack_push(& state->data_stack, number.value);
+    }
+}
+
+// Эти функции поднимают операции над числами на уровень стековых операций
+// lift_unop применяет операцию к вершине стека;
+void lift_unop( struct stack* s, int64_t (f)(int64_t))
+{ 
+    struct maybe_int64 number = stack_pop(s);
+
+    if (number.valid){
+        int64_t result = f(number.value);
+        stack_push(s, result);
+    }
+}
+
+// lift_binop забирает из стека два аргумента,
+// применяет к ним функцию от двух переменных и возвращает в стек результат
+void lift_binop( struct stack* s, int64_t (f)(int64_t, int64_t))
+{
+    struct maybe_int64 number2 = stack_pop(s);
+    struct maybe_int64 number1 = stack_pop(s);
+    
+    if (number1.valid && number2.valid){
+        int64_t result = f(number1.value, number2.value);
+        stack_push(s, result);
+    }
+}
+
+
+int64_t i64_add(int64_t a, int64_t b) { return a + b; }
+int64_t i64_sub(int64_t a, int64_t b) { return a - b; }
+int64_t i64_mul(int64_t a, int64_t b) { return a * b; }
+int64_t i64_div(int64_t a, int64_t b) { return a / b; }
+int64_t i64_cmp(int64_t a, int64_t b) { if (a > b) return 1; else if (a < b) return -1; return 0; }
+
+int64_t i64_neg(int64_t a) { return -a; }
+
+void interpret_iadd( struct vm_state* state ) { lift_binop(& state->data_stack, i64_add); }
+void interpret_isub( struct vm_state* state ) { lift_binop(& state->data_stack, i64_sub); }
+void interpret_imul( struct vm_state* state ) { lift_binop(& state->data_stack, i64_mul); }
+void interpret_idiv( struct vm_state* state ) { lift_binop(& state->data_stack, i64_div); }
+void interpret_icmp( struct vm_state* state ) { lift_binop(& state->data_stack, i64_cmp); }
+
+void interpret_ineg( struct vm_state* state ) { lift_unop (& state->data_stack, i64_neg);  }
+
+
+-----------
+
+
+/*
+
+struct array_int {
+  int64_t* data;
+  size_t size;
+};
+
+struct stack {
+  size_t count;
+  struct array_int data;
+};
+
+*/
+
+void interpret(struct vm_state* state, ins_interpreter * const  (actions)[]) {
+  for (; state->ip ;) {
+    const union ins* ins = state->ip; //текущая инструкция
+
+  //const struct ins_descr* ins_descr = instructions + ins->opcode;
+  //const struct ins_descr ins_descr* = &instructions[ins->opcode];
+    const struct ins_descr ins_descriptor = instructions[ins->opcode]; //описание инструкции
+    
+    if (ins_descriptor.stack_min > state->data_stack.count){
+        printf("Stack underflow\n");
+        return;
+    }
+      
+    if (ins_descriptor.stack_delta + (int64_t)state->data_stack.count 
+        > (int64_t)state->data_stack.data.size){
+        printf("Stack overflow\n");
+        return;
+    }
+    
+    actions[ins->opcode](state);
+
+    if (!ins_descriptor.affects_ip)
+        (state->ip)++;
+  }
+}

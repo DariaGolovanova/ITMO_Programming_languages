@@ -1,0 +1,15 @@
+void sum(int*, int*, int);
+
+------
+
+int stack_push(int value);
+int stack_pop(int* value);
+
+-------
+
+#ifndef ARITH_H
+#define ARITH_H
+
+int sum(int array[], int n);
+
+#endif

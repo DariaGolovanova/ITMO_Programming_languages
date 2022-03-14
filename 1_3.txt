@@ -1,0 +1,71 @@
+// Возвращает 1 если в числе одна цифра, иначе 0
+int is_single_digit(int n) {
+    if (n >= 0 && n <= 9) { 
+        return 1;
+    } 
+    else {
+        return 0;
+    }
+}
+
+// Возвращает 1 если в числе ровно две цифры, иначе 0
+int is_double_digit(int n) {
+    if (n < 10) { 
+        return 0;
+    } 
+    else {
+        if (n > 99) {
+            return 0;
+        }
+        else {
+                return 1;
+            }
+        }
+    }
+
+----------
+
+int is_sorted3(int a, int b, int c) {
+
+  if(a>b && b>c) {
+      return -1;
+  }
+   if (a<b && b<c) {
+       return 1;
+   }
+    else {return 0;}
+
+}
+
+
+---------
+
+int max3(int a, int b, int c) {
+
+ if(a > b) {
+     if (a>c){
+         return a;
+     }
+     else return c;
+ }
+    if (b>c) {
+        return b;
+    }
+    else return c;
+
+}
+
+
+----------
+
+void fizzbuzz(int x) {
+    if (x > 0) {
+    
+    if (x % 3 == 0)
+        printf("fizz");
+    if (x % 5 == 0)
+        printf("buzz");
+    }
+    
+    else printf("no");   
+}

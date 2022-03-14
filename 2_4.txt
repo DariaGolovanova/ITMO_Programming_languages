@@ -1,0 +1,172 @@
+struct list {
+  int64_t value;
+  struct list* next;
+};
+
+struct list* node_create( int64_t value ) {
+    struct list* ptr = malloc(sizeof(struct list));
+    
+    ptr->value = value;
+    ptr->next = NULL;
+    
+    return ptr;
+}
+
+--------
+
+// Вам доступна функция
+struct list* node_create( int64_t value );
+
+void list_add_front(struct list** adr_mylist, int64_t value ) {
+    struct list* node = node_create(value);
+    node->next = *adr_mylist;
+    *adr_mylist = node;
+}
+
+
+----------
+
+size_t list_length(const struct list* mylist) {
+    size_t counter = 0;
+    
+    const struct list* iterator = mylist;
+    while(iterator != NULL){
+        counter++;
+        iterator = iterator->next; //получаем адрес следующего, обновляем итератор
+    }
+    
+    return counter;
+}
+
+---------
+
+void list_destroy( struct list* mylist ) {
+    struct list * iterator = mylist;
+    while (iterator != NULL) {
+        struct list * buffer = iterator->next;
+        free( iterator );
+        iterator = buffer; 
+   }
+}
+
+--------
+
+struct list* list_last( struct list * mylist ) {
+    if (mylist == NULL)
+        return NULL;
+    
+    struct list* iterator = mylist;
+    
+    while(iterator->next != NULL) //пока за текущим что-то есть == он не последний
+        iterator = iterator->next;
+     
+    return iterator;   
+}
+
+--------
+
+void list_add_back( struct list** adr_of_mylist, int64_t value ) {
+    struct list* node = node_create(value);
+    
+    if (*adr_of_mylist != NULL){
+        struct list* last = list_last(*adr_of_mylist);
+        last->next = node;
+    }
+    else
+        *adr_of_mylist = node;
+}
+
+--------
+
+int64_t list_sum(const struct list* mylist ) {
+    int64_t sum = 0;
+    const struct list* iterator = mylist;
+    
+    while( iterator != NULL ){
+        sum += iterator->value;
+        iterator = iterator->next;
+    }
+    
+    return sum;
+}
+
+--------
+
+
+struct maybe_int64 list_at(const struct list* mylist, size_t index) {
+    size_t counter = 0;
+    const struct list* iterator = mylist;
+    
+    while(counter != index && iterator != NULL){
+        iterator = iterator->next;
+        counter++;
+    }
+    
+    if (iterator == NULL)
+        return none_int64;
+    
+    return (struct maybe_int64){.valid = true, .value = iterator->value };
+}
+
+
+--------
+
+
+void list_add_front( struct list** old, int64_t value );
+
+// создать перевернутую копию списка
+struct list* list_reverse(const struct list * mylist ) {
+    const struct list * iterator = mylist;
+    struct list * newlist = NULL;
+    
+    while(iterator != NULL){
+        list_add_front(&newlist, iterator->value);
+        iterator = iterator->next;
+    }
+    
+    return newlist;
+}
+
+
+-------
+
+struct maybe_int64 maybe_read_int64() {
+    int64_t number;
+    if (scanf("%"SCNd64, &number) == 1)
+        return (struct maybe_int64) {.valid = true, .value = number};
+    
+    return none_int64;
+}
+
+-------
+
+struct list* list_read() {
+    struct list * mylist = NULL;
+    struct list * last = NULL;
+    
+    bool is_input_over = false;
+    
+    struct maybe_int64 result = maybe_read_int64();
+    
+    if (result.valid){
+        mylist = node_create(result.value);
+        last = mylist;
+    }
+    else
+       is_input_over = true;
+    
+    while(!is_input_over) {
+        
+        result = maybe_read_int64();
+        
+        if (result.valid){
+            struct list* node = node_create(result.value);
+            last->next = node;
+            last = node;
+        }
+        else
+            is_input_over = true;
+    }
+    
+    return mylist;
+}

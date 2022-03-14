@@ -1,0 +1,181 @@
+void swap(int* px, int* py) {
+    int tmp = *px;
+    *px = *py;
+    *py = tmp;
+}
+
+----------
+
+void normalize(int* px) {
+  while (*px % 2 == 0 && *px > 0)
+      *px = *px/2;
+}
+
+----------
+
+void factorize(int n, int* a, int* b) {
+    if (n == 1) {
+      *a = 1;
+      *b = 1;
+  }
+    
+    if (n == 0) {
+      *a = 0;
+      *b = 0;
+  }
+    
+    if (n == 2) {
+      *a = 1;
+      *b = 2;
+  } 
+    
+    if (n == 3) {
+      *a = 1;
+      *b = 3;
+  }
+    
+    if (n == 4) {
+      *a = 2;
+      *b = 2;
+   }
+    
+    if (n == 5) {
+      *a = 1;
+      *b = 5;
+   }
+    
+    else {
+        for(int i = 2; i < n/2; i++) {
+            *a = 1;
+            *b = n;
+            if(n % i == 0) {
+                *a = i;
+                *b = n/i;
+                break;
+            }
+        }
+    }
+}
+
+
+----------
+
+void array_reverse(int* array, int size) {
+    int N = size / 2;
+    int tmp;
+    
+    for(int i = 0; i < N; i++){
+        tmp = array[i];
+        array[i] = array[size - 1 - i];
+        array[size - 1 - i] = tmp;
+    }
+}
+
+void array_reverse_ptr(int* array, int* limit) {
+    int tmp;
+    
+    int* left = array;
+    int* right = limit - 1;
+    while(left < right){
+        tmp = *left;
+        *left = *right;
+        *right = tmp;
+        
+        left++;
+        right--;
+    }
+}
+
+----------
+
+void array_fib(int* array, int* limit) {
+    int prev_prev = 1;
+    int prev = 1;
+    
+    int* curr = array;
+    if (curr != limit){
+        *curr = prev_prev;
+        curr++;
+    }
+    
+    if (curr != limit){
+        *curr = prev;
+        curr++;
+    }
+    
+    while (curr < limit){
+        *curr = prev_prev + prev;
+        prev_prev = prev;
+        prev = *curr;
+        
+        curr++;
+    }
+}
+
+
+---------
+
+// position -- адрес указателя на первый элемент E в массиве,
+// для которого predicate(E) выполняется.
+// Функция возвращает 0 если элемент не найден.
+int array_contains(int* array, int* limit, int** position) {
+   for(int* curr = array; curr < limit; curr++){
+       if (predicate(*curr) == 1){
+           *position = curr;
+           return 1;
+       }
+   }
+    
+    return 0;
+}
+
+-----------
+
+int is_whitespace(char c) { return c == ' ' || c == '\t' || c == '\n'; }
+
+int string_count(char* str) { 
+    int counter = 0;
+    
+    // for(int i = 0; str[i] != 0; i++)
+    while(*str != 0){ // 0 == '\0'
+        counter++;
+        str++;
+    }
+    
+    return counter;
+}
+
+int string_words(char* str)  {
+    int counter_of_letters = 0;
+    int counter_of_words = 0;
+    
+     while(*str != 0){ // 0 == '\0'
+         if (!is_whitespace(*str))
+             counter_of_letters++;
+         else{
+             if (counter_of_letters > 0){
+                 counter_of_words++;
+                 counter_of_letters = 0;
+             }
+         }
+        str++;
+    }
+    
+    if (counter_of_letters > 0)
+        counter_of_words++;
+    
+    return counter_of_words;
+}
+
+ /*
+ //доработать?
+   for(int i = 0; str[i] != 0; i++){ // 0 == '\0'
+        if (is_whitespace(str[i]))
+            if (
+                (i != 0 && !is_whitespace(str[i - 1])) 
+                &&
+                (str[i + 1] != 0 && !is_whitespace(str[i + 1]))
+               )
+                    counter++;
+    }
+    */

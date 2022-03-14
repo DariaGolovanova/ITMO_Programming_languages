@@ -1,0 +1,189 @@
+// вы можете реализовать эти функции для более удобного считывания чисел
+int64_t read_int64();
+size_t read_size();
+
+// заполнить уже выделенный массив array размера size числами
+void array_int_fill( int64_t* array, size_t size ) {
+  
+    for(size_t i = 0; i < size; i++)
+        scanf("%"SCNd64, array + i); // &array[i] == array + i
+    
+}
+
+// Считать размер массива в *size, выделить память под массив и заполнить его числами.
+int64_t* array_int_read( size_t* adr_of_size ) {
+  
+    size_t size_copy;
+    
+    scanf("%zu", &size_copy); 
+    int64_t* array = malloc( size_copy * sizeof(int64_t) ); //size * 8u
+    array_int_fill(array, size_copy);
+    
+    *adr_of_size = size_copy;
+    
+    return array; //возьмите адрес и не потеряйте, вам с ним потом работать
+    
+    //vs
+    //scanf("%zu", adr_of_size); //&size
+    //int64_t* array = malloc( *adr_of_size * sizeof(int64_t) ); //size * 8u
+    //array_int_fill(array, *adr_of_size);
+}
+
+
+-----------------
+
+int64_t* array_int_min(int64_t* array, size_t size ) {
+    if (array == NULL)
+        return NULL;
+    
+    int64_t* adr_min = &array[0]; // int64_t* min = array;
+    
+    for (size_t i = 0; i < size; i++) {
+        if (array[i] < *adr_min)
+            adr_min = &array[i]; //array + i
+    }
+    
+    return adr_min;
+}
+
+
+------------
+
+// эти функции вы уже реализовали на предыдущих шагах
+int64_t* array_int_read( size_t* size );
+int64_t* array_int_min( int64_t* array, size_t size); 
+
+// Выводит None если x == NULL, иначе число, на которое указывает x.
+void intptr_print( int64_t* x ) {
+    if (x == NULL)
+        printf("None");
+    else
+        printf("%"PRId64, *x);
+}
+
+void perform() {
+    size_t size;
+    int64_t* array = array_int_read( &size );
+    intptr_print(array_int_min(array, size));
+    free(array);
+}
+
+---------
+
+// Вам доступны эти функции из прошлых заданий
+size_t read_size();
+void array_int_fill( int64_t* array, size_t size );
+int64_t* array_int_read( size_t* size );
+
+int64_t** marray_read(size_t* adr_of_rows, size_t** adr_of_sizes ) {
+    //scanf("%zu", &rows);
+    size_t rows = read_size(); //кол-во строк scanf("%zu", &rows);
+    
+    int64_t** matrix = malloc(rows * sizeof(int64_t*)); //"красный" массив
+    
+    //sizes - массив, хранящий размеры каждой строки 
+     //(== количеству столбцов в каждой строке)
+    size_t* sizes = malloc(rows * sizeof(size_t));
+    
+    for(size_t i = 0; i < rows; i++) //для каждой i-той строки:
+        matrix[i] = array_int_read(&sizes[i]);
+    /*
+    for(size_t i = 0; i < rows; i++) //для каждой i-той строки:
+    {
+        sizes[i] = read_size(); //"серый", считываем размер i-й строки
+        
+        matrix[i] = malloc(size[i] * sizeof(int64_t)); //"фиолетовый" массив, выделяем память под строку
+        
+        array_int_fill(matrix[i], sizes[i]); //отправляем фиолетовый массив
+        //for(int j = 0; j < sizes[i]; j++)
+            //scanf("%"SCNd64, &matrix[i][j]); //matrix[i] + j
+    }
+    */
+    
+    *adr_of_rows = rows;
+    *adr_of_sizes = sizes;
+    
+    return matrix; //адрес 0-й ячейки самого главного массива ("красного")
+}
+
+void marray_print(int64_t** marray, size_t* sizes, size_t rows) {
+    for( size_t i = 0; i < rows; i = i + 1 ) {
+        array_int_print( marray[i], sizes[i] );
+        print_newline();
+    }
+}
+
+
+----------
+
+void marray_free( int64_t** marray, size_t rows ) {
+    for(size_t i = 0; i < rows; i++)
+        free(marray[i]);
+    free(marray);
+}
+
+
+-----------
+
+// Вам доступны следующие функции:
+size_t read_size();
+int64_t* array_int_min( int64_t* array, size_t size );
+
+//int64_t** marray_read( size_t* rows, size_t* sizes[] );
+int64_t** marray_read( size_t* adr_rows, size_t** adr_sizes );
+
+void marray_free( int64_t** marray, size_t rows );
+void marray_print(int64_t** marray, size_t* sizes, size_t rows);
+
+
+// Указатель на минимальное из двух чисел.
+// если хотя бы одно число NULL, то возвращать второе
+// если оба числа NULL результат NULL
+int64_t* int64_ptr_min(int64_t* adr_x, int64_t* adr_y) {
+    if (adr_x == NULL)
+        return adr_y; //NULL или существующий адрес
+    
+    if (adr_y == NULL)
+        return adr_x; //NULL или существующий адрес
+    
+    if (*adr_x < *adr_y)
+        return adr_x;
+    
+    return adr_y;
+}
+
+// Вернуть адрес минимального элемента массива массивов
+int64_t* marray_int_min( int64_t** marray, size_t* sizes, size_t rows ) {
+    int64_t* min = NULL;
+    
+    for(size_t i = 0u; i < rows; i++) //для каждой строки:
+        for(size_t j = 0u; j < sizes[i]; j++)
+            min = int64_ptr_min(&marray[i][j], min); //v.s. matrix[i] + j 
+                                                     //v.s. *(marray + i) + j
+    return min;
+}
+
+// Вычесть m изо всех элементов массива
+void marray_normalize( int64_t** marray, size_t sizes[], size_t rows, int64_t m ) {
+    for(size_t i = 0u; i < rows; i++) //для каждой строки:
+        for(size_t j = 0u; j < sizes[i]; j++) //для каждого элемента:
+            marray[i][j] -= m;
+}
+
+// Прочитать, найти минимум и нормализовать массив, вывести результат
+void perform() {
+    size_t rows;
+    size_t* sizes;
+    
+    int64_t** marray = marray_read(&rows, &sizes); //выделение памяти, чтение
+    
+    int64_t* adr_min = marray_int_min(marray, sizes, rows);
+    
+    if (adr_min != NULL)    //если минимум существует
+        marray_normalize(marray, sizes, rows, *adr_min);
+    
+    marray_print(marray, sizes, rows);
+    
+    marray_free(marray, rows); //освобождение из-под матрицы
+    free(sizes);
+}
